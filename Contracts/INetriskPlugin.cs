@@ -8,6 +8,6 @@ public interface INetriskPlugin
     public string PluginVersion { get; }
     public string PluginDescription { get; }
     
-    public void Initialize(ILogger logger);
+    public void Initialize(ILogger? logger);
     public void Dispose();
 }
