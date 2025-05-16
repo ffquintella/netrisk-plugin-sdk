@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Serilog" Version="4.2.0" />
+      <PackageReference Include="SkiaSharp" Version="3.119.0" />
+    </ItemGroup>
+
 </Project>
