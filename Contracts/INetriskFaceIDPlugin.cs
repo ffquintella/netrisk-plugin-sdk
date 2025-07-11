@@ -9,4 +9,6 @@ public interface INetriskFaceIDPlugin: INetriskPlugin
     public float[]? ExtractEncodings(SKBitmap bitmap);
 
     public (bool, float) IsSpoofing(SKBitmap bitmap);
+    
+    public void AddEncodingToMemory(string name, float[] encoding);
 }
