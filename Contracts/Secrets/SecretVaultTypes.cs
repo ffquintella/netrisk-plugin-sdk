@@ -27,6 +27,18 @@ public class SecretVaultCredentials
     /// it knows will 401.
     /// </summary>
     public string? MachineId { get; init; }
+
+    /// <summary>
+    /// The application identity the vault knows this installation by, when the vault authorizes by
+    /// application rather than (or as well as) by key — BastionVault's <c>app_id</c>, and the same
+    /// idea as CyberArk's AppID.
+    ///
+    /// Optional for the same reason as <see cref="MachineId"/>: a vault that authorizes on the key
+    /// alone has nothing to put here, and a plugin whose vault does need it declares
+    /// <see cref="INetriskSecretVaultPlugin.RequiresAppId"/> so the host can refuse the connection at
+    /// save time instead of shipping a 401 into a sync job.
+    /// </summary>
+    public string? AppId { get; init; }
 }
 
 /// <summary>

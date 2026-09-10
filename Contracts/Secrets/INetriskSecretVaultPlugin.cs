@@ -39,6 +39,18 @@ public interface INetriskSecretVaultPlugin : INetriskPlugin
     /// </summary>
     bool RequiresMachineId { get; }
 
+    /// <summary>
+    /// Whether this vault requires the application identity in
+    /// <see cref="SecretVaultCredentials.AppId"/> — BastionVault's <c>app_id</c>, the identity the
+    /// vault's policies are written against.
+    ///
+    /// Default-implemented as <c>false</c> rather than declared abstract: this member was added after
+    /// the contract shipped, and a plugin already compiled against the earlier SDK must keep loading.
+    /// A vault that needs an app id overrides it, and the host then marks the field required in the
+    /// connection editor instead of letting the save succeed and every later call 401.
+    /// </summary>
+    bool RequiresAppId => false;
+
     /// <summary>Verifies the credential and reports what it can reach. Must not throw for a bad credential — report it.</summary>
     Task<SecretVaultTestResult> TestConnectionAsync(SecretVaultContext context, CancellationToken ct = default);
 
