@@ -1,3 +1,5 @@
+using Contracts.Ui;
+
 namespace Contracts.Secrets;
 
 /// <summary>
@@ -39,6 +41,21 @@ public class SecretVaultCredentials
     /// save time instead of shipping a 401 into a sync job.
     /// </summary>
     public string? AppId { get; init; }
+
+    /// <summary>
+    /// The values of the fields this plugin declared for the connection editor
+    /// (<see cref="PluginScreen.VaultConnectionEditor"/>), keyed by
+    /// <see cref="PluginFieldSpec.Key"/> — a namespace, a mount, a tenant: whatever the vault needs
+    /// that the four fixed credentials above do not name.
+    ///
+    /// Empty for a connection saved before the plugin declared anything, and empty for a plugin that
+    /// declares nothing, which is every plugin compiled against an earlier SDK. A value here is
+    /// stored and returned in the clear like <see cref="MachineId"/> and <see cref="AppId"/>: it
+    /// names the caller or the location, it does not authenticate. A plugin must not ask for a second
+    /// credential through this dictionary.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Options { get; init; } =
+        new Dictionary<string, string>();
 }
 
 /// <summary>
@@ -94,6 +111,23 @@ public class VaultSecretReference
 
     /// <summary>The field to read, for a structured secret. Null means the secret's single value.</summary>
     public string? Field { get; init; }
+
+    /// <summary>
+    /// The values the plugin's own controls produced on the picker, keyed by
+    /// <see cref="PluginFieldSpec.Key"/> — BastionVault's environment being the first of them.
+    ///
+    /// <para><b>This is the property that keeps <see cref="SecretId"/> opaque.</b> Before it existed
+    /// the only way for a plugin to carry a concept the contract had not foreseen was to encode it
+    /// inside the id, which gave the id a grammar owned by one plugin and read by a host that stores,
+    /// prefix-scans and displays it. Anything a plugin needs alongside the secret's identity belongs
+    /// here.</para>
+    ///
+    /// <para>Empty for every reference stored before the plugin declared a field, which is what the
+    /// host still writes whenever no declared field has a value. A plugin that reads this must go on
+    /// tolerating an empty dictionary: an older host never fills it.</para>
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Options { get; init; } =
+        new Dictionary<string, string>();
 }
 
 /// <summary>

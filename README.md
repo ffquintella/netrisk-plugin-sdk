@@ -66,5 +66,45 @@ public class MyVaultPlugin : INetriskSecretVaultPlugin
 }
 ```
 
+### Contributing controls to a host screen
+
+Some screens are the plugin's in all but name — the secret picker and the vault connection editor
+both exist to configure one particular vault. When a vault has a concept the fixed contract does not
+name (BastionVault's per-environment KV v2 overrides; a namespace, a mount, a tenant elsewhere), the
+plugin **declares** the control and the host **renders** it. Nothing executable crosses the boundary:
+`Contracts.Ui` is data classes, and there is no way to ship a view from a plugin assembly.
+
+```csharp
+public IReadOnlyList<PluginFieldSpec> DescribeScreen(PluginScreen screen) =>
+    screen == PluginScreen.VaultSecretSelector
+        ? [new PluginFieldSpec
+          {
+              Key = "environment",
+              Label = "Environment",
+              Help = "Which environment's value this reference reads.",
+              Kind = PluginFieldKind.Choice,
+              OptionsDependOnSecret = true
+          }]
+        : [];
+
+public async Task<IReadOnlyList<PluginFieldOption>> GetFieldOptionsAsync(SecretVaultContext ctx,
+    PluginFieldQuery query, CancellationToken ct = default) => /* ask the vault */;
+```
+
+The operator's answers arrive in `VaultSecretReference.Options` (picker) and
+`SecretVaultCredentials.Options` (connection editor), keyed by `PluginFieldSpec.Key`. Three rules
+beyond the three above:
+
+4. **Never put an option list in the declaration.** It depends on the credential, so it comes from
+   `GetFieldOptionsAsync` with a `SecretVaultContext`.
+5. **An option is metadata.** The no-values rule that governs `ListSecretsAsync` governs option
+   lists too — never a secret, and never read a secret to build one.
+6. **Keep the secret id opaque.** Anything beside the secret's identity goes in `Options`. If an
+   earlier version of your plugin encoded something inside the id, keep accepting it on the read
+   path and implement `NormalizeReference` so the host can retire it.
+
+All three members are default-implemented, so a plugin built against an earlier SDK keeps loading
+and its screens render unchanged.
+
 The assembly name must end in `Plugin.dll` and the file goes in a subdirectory of the host's
 `Plugins` folder — `Plugins/Secrets/` by convention for this capability.

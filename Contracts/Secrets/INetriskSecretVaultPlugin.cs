@@ -1,3 +1,5 @@
+using Contracts.Ui;
+
 namespace Contracts.Secrets;
 
 /// <summary>
@@ -72,4 +74,60 @@ public interface INetriskSecretVaultPlugin : INetriskPlugin
     /// </exception>
     Task<VaultSecretValue> GetSecretAsync(SecretVaultContext context, VaultSecretReference reference,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// The extra controls this plugin contributes to one of the host's screens, or empty for
+    /// "render the screen as it already is".
+    ///
+    /// <para><b>Why the contract has this at all.</b> Every screen in NetRisk is the host's, and a
+    /// plugin whose vault has a concept the contract did not foresee had nowhere to put it — so it
+    /// encoded the concept inside a field the host treats as opaque, which is how a secret id
+    /// acquires a grammar that the host stores, indexes and displays without knowing it exists. The
+    /// rule this replaces it with: a screen specific to a plugin is declared by the plugin and
+    /// rendered by the host.</para>
+    ///
+    /// <para>Pure, and called to build a form. No I/O, no credential — it may be called before any
+    /// connection exists, which is the case on the connection editor. The options of a
+    /// <see cref="PluginFieldKind.Choice"/> are not here for that reason; they come from
+    /// <see cref="GetFieldOptionsAsync"/>, with a context.</para>
+    ///
+    /// <para>Default-implemented as empty rather than declared abstract, the precedent being
+    /// <see cref="RequiresAppId"/>: a plugin compiled against an earlier SDK must keep loading, and
+    /// its screens then render exactly as they do today.</para>
+    /// </summary>
+    IReadOnlyList<PluginFieldSpec> DescribeScreen(PluginScreen screen) => [];
+
+    /// <summary>
+    /// The options for one <see cref="PluginFieldKind.Choice"/> field this plugin declared.
+    ///
+    /// <para>By call and never in the declaration, because the answer depends on the credential: an
+    /// environment-scoped role may read the environments its scope names and no others, and two
+    /// connections served by this same plugin reach two vaults that answer differently.</para>
+    ///
+    /// <para>Metadata only, and the listing rule applies unchanged: an option must not be a secret
+    /// or be derived from reading one. If a list can only be built by reading secrets, return
+    /// nothing and declare the field with <see cref="PluginFieldSpec.AllowCustomValue"/> — an empty
+    /// list an operator can type into is better than an audit-log entry per row they scroll past.
+    /// </para>
+    /// </summary>
+    /// <exception cref="SecretVaultException">The vault refused or could not be reached.</exception>
+    Task<IReadOnlyList<PluginFieldOption>> GetFieldOptionsAsync(SecretVaultContext context,
+        PluginFieldQuery query, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<PluginFieldOption>>([]);
+
+    /// <summary>
+    /// A stored reference written in a form this plugin no longer produces, rewritten into the one
+    /// it does — or the same reference, unchanged, when there is nothing to rewrite.
+    ///
+    /// <para>The migration hook for exactly the situation <see cref="DescribeScreen"/> ends. A
+    /// plugin that once had to encode a concept inside <see cref="VaultSecretReference.SecretId"/>
+    /// is the only thing that knows that encoding; the host must not learn it. So the host hands the
+    /// reference back and stores whatever comes out, on the read path for display and through an
+    /// explicit console command for persistence.</para>
+    ///
+    /// <para>Pure and offline: no I/O, no vault call, no exception. A reference it does not
+    /// recognise comes back as it went in. Returning the same instance is the correct answer for
+    /// every plugin that never invented a grammar, which is why that is the default.</para>
+    /// </summary>
+    VaultSecretReference NormalizeReference(VaultSecretReference reference) => reference;
 }
